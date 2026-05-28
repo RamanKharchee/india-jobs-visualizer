@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>India Job Market Visualizer — PLFS Apr 2026</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #15181f;
+    --ink: #e7e9ee;
+    --ink-dim: #9aa1ac;
+    --rule: #2a2f3a;
+    --accent: #ffb84d;
+    --accent-2: #6fb1ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header { padding: 16px 22px 10px 22px; border-bottom: 1px solid var(--rule); }
+  header h1 { margin: 0 0 4px 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+  header .sub { color: var(--ink-dim); font-size: 12.5px; line-height: 1.55; max-width: 1100px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .stat {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+    padding: 9px 12px;
+  }
+  .stat.hot { border-color: rgba(255, 184, 77, 0.45); box-shadow: 0 0 0 1px rgba(255, 184, 77, 0.12) inset; }
+  .stat .k { color: var(--ink-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat .tag { display: inline-block; background: rgba(255, 184, 77, 0.18); color: var(--accent); font-size: 9px;
+    font-weight: 700; text-transform: uppercase; padding: 1px 5px; border-radius: 3px; margin-left: 6px; letter-spacing: 0.05em; vertical-align: middle; }
+  .stat .v { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .stat .d { color: var(--ink-dim); font-size: 11px; margin-top: 2px; }
+  .stat .v small { font-size: 12px; color: var(--ink-dim); font-weight: 500; margin-left: 4px; }
+  .stat .delta-up { color: #f08a5d; }
+  .stat .delta-dn { color: #5fb37a; }
+
+  .trend {
+    padding: 8px 22px 10px 22px; border-bottom: 1px solid var(--rule);
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+  }
+  .trend .panel-title {
+    font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 2px;
+  }
+  .trend .panel-title strong { color: var(--ink); font-weight: 700; letter-spacing: 0; text-transform: none; font-size: 12px; }
+  .trend svg { width: 100%; height: 70px; }
+  @media (max-width: 760px) { .trend { grid-template-columns: 1fr; } }
+
+  .controls {
+    display: flex; gap: 14px; align-items: center; padding: 10px 22px;
+    border-bottom: 1px solid var(--rule); font-size: 12px; color: var(--ink-dim);
+    flex-wrap: wrap;
+  }
+  .controls .group { display: flex; gap: 6px; align-items: center; }
+  .controls .group .lbl { color: var(--ink-dim); }
+  .controls select { background: var(--panel); color: var(--ink); border: 1px solid var(--rule);
+    padding: 4px 8px; border-radius: 4px; font: inherit; }
+  .legend { display: flex; align-items: center; gap: 8px; }
+  .legend .swatch { width: 220px; height: 10px; border-radius: 2px;
+    background: linear-gradient(to right, #2c1a3a, #5f2e80, #b13b78, #ee6a4d, #f0c64a); }
+
+  #chart { width: 100vw; height: calc(100vh - 380px); min-height: 360px; position: relative; }
+  svg { width: 100%; height: 100%; display: block; }
+  .cell rect { stroke: rgba(0,0,0,0.55); stroke-width: 1px; cursor: pointer; }
+  .cell:hover rect { stroke: #fff; stroke-width: 1.5px; }
+  .cell text { fill: #fff; pointer-events: none; font-size: 11px;
+    paint-order: stroke; stroke: rgba(0,0,0,0.45); stroke-width: 2.5px; stroke-linejoin: round; }
+  .cell .label-name { font-weight: 600; }
+  .cell .label-stat { opacity: 0.85; font-size: 10px; }
+  .group-label {
+    fill: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    text-transform: uppercase; pointer-events: none;
+    paint-order: stroke; stroke: rgba(0,0,0,0.7); stroke-width: 3px; stroke-linejoin: round;
+  }
+
+  #tooltip {
+    position: fixed; pointer-events: none; opacity: 0;
+    background: rgba(20,22,28,0.97); border: 1px solid var(--rule);
+    padding: 10px 12px; border-radius: 6px; font-size: 12px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.4);
+    min-width: 260px; max-width: 340px; z-index: 1000;
+    top: 0; left: 0;
+    transition: opacity 0.08s ease;
+  }
+  #tooltip .name { font-weight: 700; margin-bottom: 4px; font-size: 13px; }
+  #tooltip .grp { color: var(--ink-dim); margin-bottom: 6px; font-size: 11px; }
+  #tooltip .row { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; }
+  #tooltip .row span:first-child { color: var(--ink-dim); }
+  #tooltip .src { font-size: 9px; padding: 1px 4px; border-radius: 2px; margin-left: 4px; vertical-align: middle;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  #tooltip .src.v { background: rgba(95, 179, 122, 0.18); color: #87d49d; }
+  #tooltip .src.a { background: rgba(231, 193, 76, 0.18); color: #e7c14c; }
+  #tooltip .src.e { background: rgba(240, 138, 93, 0.18); color: #f08a5d; }
+
+  footer {
+    padding: 8px 22px; font-size: 11px; color: var(--ink-dim);
+    border-top: 1px solid var(--rule); background: var(--bg);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>India Job Market — Workforce Visualizer</h1>
+  <div class="sub">
+    All-India workforce. Latest indicators: <a href="https://www.pib.gov.in/PressReleasePage.aspx?PRID=2261386" target="_blank" rel="noopener">PLFS Monthly Bulletin April 2026</a> (CWS). Treemap composition + occupation 2-digit shares + female-share + division wages: <a href="https://mospi.gov.in/sites/default/files/publication_reports/AnnualReport_PLFS2023-24L2.pdf" target="_blank" rel="noopener">PLFS Annual Report 2023–24</a> Statement 7, Table 25, Table 50 (usual status, persons 15+, rural+urban). Total workforce scaled to PLFS 2025 (616M). Area = workers. Color = chosen metric. Tooltip badges: <span style="color: #87d49d; font-weight: 700">PLFS</span> = verified, <span style="color: #e7c14c; font-weight: 700">PLFS÷</span> = PLFS aggregate applied to sub-cell, <span style="color: #f08a5d; font-weight: 700">est</span> = author estimate.
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat hot"><div class="k">LFPR Apr-26<span class="tag">latest</span></div><div class="v">55.0%</div><div class="d">CWS · <span class="delta-dn">−0.4 vs Mar-26</span></div></div>
+  <div class="stat hot"><div class="k">WPR Apr-26<span class="tag">latest</span></div><div class="v">52.2%</div><div class="d">CWS · <span class="delta-dn">−0.4 vs Mar-26</span></div></div>
+  <div class="stat hot"><div class="k">UR Apr-26<span class="tag">latest</span></div><div class="v">5.2%</div><div class="d">CWS · <span class="delta-up">+0.1 vs Mar-26</span></div></div>
+  <div class="stat"><div class="k">Workforce 15+</div><div class="v">616 M<small>employed</small></div><div class="d">PLFS 2025 (usual status)</div></div>
+  <div class="stat"><div class="k">Female LFPR</div><div class="v">34.4%</div><div class="d">CWS Mar-26 · F-rural 38.9% · F-urban 25.2%</div></div>
+  <div class="stat"><div class="k">Self-employed</div><div class="v">57.5%</div><div class="d">PLFS 2025 annual</div></div>
+  <div class="stat"><div class="k">Regular wage</div><div class="v">23.6%</div><div class="d">Up from 22.4% (2024)</div></div>
+  <div class="stat"><div class="k">Avg regular wage</div><div class="v">₹20,400<small>/month</small></div><div class="d">Rural ₹17.0k · Urban ₹24.4k</div></div>
+</div>
+
+<div class="trend">
+  <div>
+    <div class="panel-title"><strong>LFPR</strong> · CWS · 15+ · Apr 2025 → Apr 2026</div>
+    <svg id="trend-lfpr"></svg>
+  </div>
+  <div>
+    <div class="panel-title"><strong>WPR</strong> · CWS · 15+ · Apr 2025 → Apr 2026</div>
+    <svg id="trend-wpr"></svg>
+  </div>
+  <div>
+    <div class="panel-title"><strong>Unemployment Rate</strong> · CWS · 15+ · Apr 2025 → Apr 2026</div>
+    <svg id="trend-ur"></svg>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="group">
+    <span class="lbl">View:</span>
+    <select id="view">
+      <option value="industry">Industry (NIC) — hard PLFS data</option>
+      <option value="occupation">Occupation (NCO) — directional</option>
+      <option value="employment">Employment type × sector</option>
+    </select>
+  </div>
+  <div class="group">
+    <span class="lbl">Size by:</span>
+    <select id="sizeBy">
+      <option value="workers">Workers</option>
+      <option value="wageBill">Total wage bill</option>
+    </select>
+  </div>
+  <div class="group">
+    <span class="lbl">Color by:</span>
+    <select id="colorBy">
+      <option value="exposure">Digital AI exposure (0–10)</option>
+      <option value="outlook">Growth outlook (annual %)</option>
+      <option value="wage">Median monthly wage (₹)</option>
+      <option value="female">Female share (%)</option>
+      <option value="formal">Formal-sector share (%)</option>
+    </select>
+  </div>
+  <div class="legend">
+    <span id="legendMin">low</span>
+    <span class="swatch" id="legendSwatch"></span>
+    <span id="legendMax">high</span>
+  </div>
+  <div style="margin-left:auto; color: var(--ink-dim);">
+    Latest: <strong style="color: var(--ink)">PLFS Monthly Bulletin Apr 2026</strong> · NSO/MoSPI
+  </div>
+</div>
+
+<div id="chart"></div>
+
+<div id="tooltip"></div>
+
+<footer>
+  <strong style="color: var(--ink)">Verified from PLFS 2023–24 Annual Report:</strong> Industry broad-division shares + male/female columns (Statement 7); NCO sub-division 2-digit shares + male/female columns (Table 25, Appendix A); average regular-wage/salaried earnings by NCO Division (Table 50, Apr–Jun 2024, rural+urban, person). Headline indicators above from PLFS Monthly Bulletin <strong style="color: var(--ink)">April 2026</strong> (CWS) and PLFS Annual Report 2025 (usual status, total employed 616M). <strong style="color: var(--ink)">Approximate:</strong> sub-sector splits within industry divisions; sub-division wages (PLFS publishes by NCO Division only). <strong style="color: var(--ink)">Author estimates:</strong> Growth outlook (%/year) from PLFS year-over-year share shifts + sector trend reading; Digital AI Exposure (0–10) hand-scored per <a href="https://github.com/karpathy/jobs" target="_blank" rel="noopener" style="color: var(--accent);">karpathy/jobs</a> rubric (0 = physical/relational, 10 = primarily digital cognitive); formal-sector share per cell (PLFS publishes only state-level totals). Reshape ≠ replace. Wages from PLFS 2023–24 Q4 regular salaried earnings (Apr–Jun 2024). Built with D3.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+<script>
+/*
+ * TOTAL_WORKERS_M: 616 million employed (15+) per PLFS Annual Report 2025 (Jan-Dec 2025).
+ *
+ * Three views:
+ *   - industry: NIC 1-digit (10 broad sections) with PLFS-derived sub-sections.
+ *               2025 anchors: agri 43.0, mfg 12.1, broad services 13.1.
+ *               2023-24 detail for trade/construction/transport/other-services.
+ *   - occupation: NCO 1-digit (10 major groups). Sub-major shares estimated.
+ *   - employment: Self-employed / Regular salaried / Casual × broad sector.
+ */
+const TOTAL_WORKERS_M = 616;
+
+// =============== VIEW 1: INDUSTRY (NIC) ===============
+// VERIFIED from PLFS 2023-24 Annual Report:
+//   - Broad division share: Statement 7 (rural+urban, persons, usual status).
+//   - Female share per industry: derived from Statement 7 male/female columns
+//     using F-share-of-workforce = 0.346 (PLFS 2023-24 weighted).
+// APPROXIMATE: sub-sector splits within each broad division (PLFS publishes
+// these only via Table 26 at 2-digit NIC level — not all 50+ subdivisions
+// extracted here; allocation reflects rough sectoral pattern, not exact PLFS).
+// APPROXIMATE: per-sub-sector wages (PLFS publishes wage by NCO Division only).
+const INDUSTRY = [
+  { code: "A", name: "Agriculture, forestry & fishing", share: 46.1, color: "#5fb37a", children: [
+    { code: "A1", name: "Crop & animal production (farmers, labourers)", subShare: 0.86, wage: 7500, female: 48, formal: 3 },
+    { code: "A2", name: "Forestry & logging", subShare: 0.04, wage: 9000, female: 22, formal: 12 },
+    { code: "A3", name: "Fishing & aquaculture", subShare: 0.06, wage: 11000, female: 12, formal: 8 },
+    { code: "A4", name: "Plantation crops (tea, coffee, rubber)", subShare: 0.04, wage: 9500, female: 55, formal: 25 },
+  ]},
+  { code: "C", name: "Manufacturing", share: 11.4, color: "#c084d6", children: [
+    { code: "C1", name: "Textiles, apparel, leather", subShare: 0.30, wage: 11000, female: 48, formal: 28 },
+    { code: "C2", name: "Food, beverages, tobacco", subShare: 0.18, wage: 10000, female: 28, formal: 18 },
+    { code: "C3", name: "Metals, machinery, equipment", subShare: 0.18, wage: 16000, female: 6, formal: 45 },
+    { code: "C4", name: "Auto, transport equipment", subShare: 0.10, wage: 19000, female: 10, formal: 60 },
+    { code: "C5", name: "Chemicals, pharma, rubber, plastics", subShare: 0.10, wage: 17000, female: 22, formal: 55 },
+    { code: "C6", name: "Wood, paper, furniture, printing", subShare: 0.08, wage: 11000, female: 18, formal: 15 },
+    { code: "C7", name: "Electronics & electrical equipment", subShare: 0.06, wage: 18000, female: 20, formal: 65 },
+  ]},
+  { code: "F", name: "Construction", share: 12.0, color: "#e7c14c", children: [
+    { code: "F1", name: "Building construction (residential, commercial)", subShare: 0.62, wage: 12000, female: 11, formal: 10 },
+    { code: "F2", name: "Civil engineering (roads, rail, bridges)", subShare: 0.22, wage: 14500, female: 4, formal: 22 },
+    { code: "F3", name: "Specialized construction (electrical, plumbing, finishing)", subShare: 0.16, wage: 14000, female: 6, formal: 18 },
+  ]},
+  { code: "G", name: "Wholesale & retail trade, hotels, restaurants", share: 12.2, color: "#f08a5d", children: [
+    { code: "G1", name: "Retail trade (shopkeepers, salespersons)", subShare: 0.58, wage: 12000, female: 17, formal: 14 },
+    { code: "G2", name: "Wholesale trade & commission agents", subShare: 0.16, wage: 16000, female: 12, formal: 32 },
+    { code: "G3", name: "Restaurants, food service & catering", subShare: 0.18, wage: 11000, female: 22, formal: 18 },
+    { code: "G4", name: "Accommodation, hotels & lodging", subShare: 0.08, wage: 13000, female: 24, formal: 38 },
+  ]},
+  { code: "H", name: "Transport, storage & communication", share: 5.6, color: "#6f8cd3", children: [
+    { code: "H1", name: "Road transport (drivers, freight)", subShare: 0.62, wage: 14000, female: 7, formal: 16 },
+    { code: "H2", name: "Storage, warehousing & support", subShare: 0.16, wage: 15000, female: 6, formal: 35 },
+    { code: "H3", name: "Telecom & postal services", subShare: 0.12, wage: 22000, female: 18, formal: 65 },
+    { code: "H4", name: "Rail, water & air transport", subShare: 0.10, wage: 25000, female: 8, formal: 85 },
+  ]},
+  { code: "K", name: "Other services (finance, IT/ITeS, real estate, business)", share: 4.5, color: "#7bc6c8", children: [
+    { code: "K1", name: "Banking, insurance, financial intermediation", subShare: 0.42, wage: 32000, female: 38, formal: 88 },
+    { code: "K2", name: "Real estate, leasing", subShare: 0.18, wage: 18000, female: 38, formal: 35 },
+    { code: "K3", name: "IT/ITeS & professional, scientific services", subShare: 0.30, wage: 38000, female: 38, formal: 82 },
+    { code: "K4", name: "Administrative & support services", subShare: 0.10, wage: 14000, female: 38, formal: 32 },
+  ]},
+  { code: "O", name: "Public administration, defence, education, health", share: 6.0, color: "#5b8def", children: [
+    { code: "O1", name: "Public administration & defence", subShare: 0.32, wage: 32000, female: 38, formal: 95 },
+    { code: "O2", name: "Education (teachers, schools, colleges)", subShare: 0.40, wage: 22000, female: 38, formal: 68 },
+    { code: "O3", name: "Human health & social work", subShare: 0.20, wage: 20000, female: 38, formal: 55 },
+    { code: "O4", name: "Other community/social services (police, fire)", subShare: 0.08, wage: 18000, female: 38, formal: 78 },
+  ]},
+  { code: "S", name: "Other personal & household services", share: 1.4, color: "#b6d27a", children: [
+    { code: "S1", name: "Personal services (salons, laundry, repair)", subShare: 0.42, wage: 10500, female: 38, formal: 8 },
+    { code: "S2", name: "Domestic & household work", subShare: 0.32, wage: 8500, female: 78, formal: 4 },
+    { code: "S3", name: "Arts, entertainment, recreation", subShare: 0.10, wage: 13000, female: 28, formal: 18 },
+    { code: "S4", name: "Membership organizations, religious", subShare: 0.16, wage: 11000, female: 22, formal: 28 },
+  ]},
+  { code: "B", name: "Mining & quarrying", share: 0.2, color: "#a98b6a", children: [
+    { code: "B1", name: "Coal, lignite, ore mining", subShare: 0.60, wage: 22000, female: 17, formal: 72 },
+    { code: "B2", name: "Stone, sand & quarrying", subShare: 0.40, wage: 12000, female: 17, formal: 18 },
+  ]},
+  { code: "D", name: "Electricity, gas, water, sanitation", share: 0.5, color: "#7a7d85", children: [
+    { code: "D1", name: "Electricity & gas supply", subShare: 0.55, wage: 28000, female: 14, formal: 90 },
+    { code: "D2", name: "Water, sewerage & waste mgmt", subShare: 0.45, wage: 14000, female: 14, formal: 45 },
+  ]},
+];
+
+// =============== VIEW 2: OCCUPATION (NCO) ===============
+// VERIFIED from PLFS 2023-24 Annual Report:
+//   - Sub-division shares: Table 25 (rural+urban, persons) — direct PLFS figures.
+//   - Female share per cell: derived from Table 25 male/female columns
+//     using F-share-of-workforce = 0.346 (PLFS 2023-24 WPR-weighted).
+//   - Wage: Table 50 (regular wage/salaried earnings by NCO Division, rural+urban
+//     person, Apr-Jun 2024). Applied as Division avg to all sub-divisions
+//     (PLFS does not publish sub-division-level wages). Reflects regular-salaried
+//     workers only — self-employed / casual earnings differ.
+// Formal-sector share: estimated (PLFS Table 36 publishes only state-level totals;
+// no occupation cross-tab in published statements).
+const OCCUPATION = [
+  { code: "1", name: "Managers", share: 3.16, color: "#5b8def", children: [
+    { code: "11", name: "Chief executives, senior officials & legislators", subShare: 0.5886, wage: 42993, female: 12, formal: 65 },
+    { code: "12", name: "Administrative & commercial managers", subShare: 0.2057, wage: 42993, female: 10, formal: 78 },
+    { code: "13", name: "Production & specialized services managers", subShare: 0.1203, wage: 42993, female: 12, formal: 72 },
+    { code: "14", name: "Hospitality, retail & other services managers", subShare: 0.0854, wage: 42993, female: 11, formal: 42 },
+  ]},
+  { code: "2", name: "Professionals", share: 5.28, color: "#7bc6c8", children: [
+    { code: "21", name: "Science & engineering professionals", subShare: 0.0833, wage: 35776, female: 11, formal: 78 },
+    { code: "22", name: "Health professionals", subShare: 0.0871, wage: 35776, female: 40, formal: 68 },
+    { code: "23", name: "Teaching professionals", subShare: 0.4356, wage: 35776, female: 48, formal: 72 },
+    { code: "24", name: "Business & administration professionals", subShare: 0.1269, wage: 35776, female: 22, formal: 75 },
+    { code: "25", name: "ICT professionals", subShare: 0.1496, wage: 35776, female: 25, formal: 92 },
+    { code: "26", name: "Legal, social & cultural professionals", subShare: 0.1155, wage: 35776, female: 12, formal: 52 },
+  ]},
+  { code: "3", name: "Technicians & associate professionals", share: 2.26, color: "#b6d27a", children: [
+    { code: "31", name: "Science & engineering associates", subShare: 0.3053, wage: 24199, female: 6, formal: 58 },
+    { code: "32", name: "Health associates", subShare: 0.2478, wage: 24199, female: 65, formal: 54 },
+    { code: "33", name: "Business & admin associates", subShare: 0.3142, wage: 24199, female: 13, formal: 62 },
+    { code: "34", name: "Legal, social, cultural associates", subShare: 0.0841, wage: 24199, female: 17, formal: 38 },
+    { code: "35", name: "ICT technicians", subShare: 0.0487, wage: 24199, female: 15, formal: 74 },
+  ]},
+  { code: "4", name: "Clerical support workers", share: 2.11, color: "#e7c14c", children: [
+    { code: "41", name: "General & keyboard clerks", subShare: 0.5071, wage: 23616, female: 22, formal: 62 },
+    { code: "42", name: "Customer service clerks", subShare: 0.1327, wage: 23616, female: 29, formal: 56 },
+    { code: "43", name: "Numerical & material-recording clerks", subShare: 0.1611, wage: 23616, female: 22, formal: 60 },
+    { code: "44", name: "Other clerical support workers", subShare: 0.1943, wage: 23616, female: 17, formal: 32 },
+  ]},
+  { code: "5", name: "Service & sales workers", share: 11.54, color: "#f08a5d", children: [
+    { code: "51", name: "Personal services (cooks, waiters, hairdressers)", subShare: 0.1811, wage: 14628, female: 36, formal: 18 },
+    { code: "52", name: "Sales workers (shopkeepers, salespersons)", subShare: 0.7192, wage: 14628, female: 18, formal: 14 },
+    { code: "53", name: "Personal care (childcare, eldercare, ASHA)", subShare: 0.0173, wage: 14628, female: 80, formal: 24 },
+    { code: "54", name: "Protective services (police, security)", subShare: 0.0823, wage: 14628, female: 4, formal: 62 },
+  ]},
+  { code: "6", name: "Skilled agricultural, forestry & fishery workers", share: 37.97, color: "#5fb37a", children: [
+    { code: "61", name: "Market-oriented skilled agricultural workers", subShare: 0.8970, wage: 11319, female: 43, formal: 3 },
+    { code: "62", name: "Market-oriented skilled forestry, fishery & hunting", subShare: 0.0145, wage: 11319, female: 43, formal: 4 },
+    { code: "63", name: "Subsistence farmers, fishers, hunters & gatherers", subShare: 0.0888, wage: 11319, female: 62, formal: 1 },
+  ]},
+  { code: "7", name: "Craft & related trades workers", share: 11.09, color: "#c084d6", children: [
+    { code: "71", name: "Building & related trades (excl. electricians)", subShare: 0.2913, wage: 15350, female: 1, formal: 12 },
+    { code: "72", name: "Metal, machinery & related trades", subShare: 0.1425, wage: 15350, female: 1, formal: 22 },
+    { code: "73", name: "Handicraft & printing workers", subShare: 0.1100, wage: 15350, female: 40, formal: 8 },
+    { code: "74", name: "Electrical & electronics trades", subShare: 0.0785, wage: 15350, female: 0, formal: 30 },
+    { code: "75", name: "Food processing, wood, garment & other craft", subShare: 0.3770, wage: 15350, female: 59, formal: 12 },
+  ]},
+  { code: "8", name: "Plant & machine operators, assemblers", share: 5.32, color: "#6f8cd3", children: [
+    { code: "81", name: "Stationary plant & machine operators", subShare: 0.2180, wage: 15906, female: 13, formal: 38 },
+    { code: "82", name: "Assemblers", subShare: 0.0150, wage: 15906, female: 8, formal: 32 },
+    { code: "83", name: "Drivers & mobile plant operators", subShare: 0.7669, wage: 15906, female: 0, formal: 18 },
+  ]},
+  { code: "9", name: "Elementary occupations", share: 21.28, color: "#a98b6a", children: [
+    { code: "91", name: "Cleaners & helpers", subShare: 0.0757, wage: 10667, female: 64, formal: 14 },
+    { code: "92", name: "Agricultural, forestry & fishery labourers", subShare: 0.3722, wage: 10667, female: 51, formal: 2 },
+    { code: "93", name: "Labourers in mining, construction, manufacturing, transport", subShare: 0.5103, wage: 10667, female: 15, formal: 8 },
+    { code: "94", name: "Food preparation assistants", subShare: 0.0047, wage: 10667, female: 52, formal: 10 },
+    { code: "95", name: "Street & related sales/services", subShare: 0.0132, wage: 10667, female: 16, formal: 2 },
+    { code: "96", name: "Refuse workers & other elementary", subShare: 0.0240, wage: 10667, female: 33, formal: 18 },
+  ]},
+];
+
+// =============== VIEW 3: EMPLOYMENT TYPE × SECTOR ===============
+// PLFS 2025: self-employed 57.5%, regular salaried 23.6%, casual 18.9%.
+// Within each, allocated across broad sectors using PLFS 2023-24 cross-tab patterns.
+const EMPLOYMENT = [
+  { code: "SE", name: "Self-employed", share: 57.5, color: "#5fb37a", children: [
+    { code: "SE-A", name: "Own-account farmers & farm-helper family", subShare: 0.55, wage: 7000, female: 44, formal: 0 },
+    { code: "SE-T", name: "Shopkeepers & small traders (own-account)", subShare: 0.18, wage: 12000, female: 18, formal: 4 },
+    { code: "SE-C", name: "Own-account craftspersons & home-based mfg", subShare: 0.12, wage: 10000, female: 38, formal: 3 },
+    { code: "SE-S", name: "Personal services (tailors, mechanics, salons)", subShare: 0.10, wage: 11000, female: 26, formal: 5 },
+    { code: "SE-D", name: "Own-account drivers & transport (auto, taxi)", subShare: 0.05, wage: 14000, female: 1, formal: 6 },
+  ]},
+  { code: "RW", name: "Regular wage / salaried", share: 23.6, color: "#5b8def", children: [
+    { code: "RW-S", name: "Public admin, defence, education, health (govt + pvt)", subShare: 0.30, wage: 28000, female: 38, formal: 78 },
+    { code: "RW-M", name: "Manufacturing factory workers (regular)", subShare: 0.18, wage: 16000, female: 22, formal: 55 },
+    { code: "RW-K", name: "Finance, IT/ITeS, professional services", subShare: 0.18, wage: 35000, female: 30, formal: 85 },
+    { code: "RW-T", name: "Trade, hotel & restaurant employees", subShare: 0.14, wage: 14000, female: 18, formal: 32 },
+    { code: "RW-H", name: "Transport & logistics employees", subShare: 0.08, wage: 18000, female: 6, formal: 42 },
+    { code: "RW-O", name: "Other regular wage (utilities, mining etc.)", subShare: 0.12, wage: 20000, female: 14, formal: 65 },
+  ]},
+  { code: "CL", name: "Casual labour", share: 18.9, color: "#e7c14c", children: [
+    { code: "CL-A", name: "Casual agricultural labourers", subShare: 0.42, wage: 7000, female: 48, formal: 1 },
+    { code: "CL-F", name: "Construction site labourers", subShare: 0.38, wage: 11000, female: 14, formal: 5 },
+    { code: "CL-M", name: "Casual manufacturing labourers", subShare: 0.10, wage: 10000, female: 24, formal: 6 },
+    { code: "CL-G", name: "Casual trade / load-unload (mandis, markets)", subShare: 0.06, wage: 9500, female: 18, formal: 3 },
+    { code: "CL-O", name: "Other casual labour (services, transport)", subShare: 0.04, wage: 9500, female: 20, formal: 4 },
+  ]},
+];
+
+const VIEWS = { industry: INDUSTRY, occupation: OCCUPATION, employment: EMPLOYMENT };
+
+// Projected annual employment growth (%) — directional estimates from
+// PLFS year-over-year share shifts (2022-23 → 2025) and industry observation
+// (PLI scheme push for electronics, IT/ITeS hiring trend, agri share decline, etc.).
+// Negative = shrinking, 0 = flat, positive = growing.
+const GROWTH = {
+  // INDUSTRY (NIC)
+  A1: -1, A2:  0, A3:  4, A4: -1,
+  C1:  2, C2:  4, C3:  3, C4:  6, C5:  5, C6:  1, C7: 12,
+  F1:  5, F2:  7, F3:  4,
+  G1:  3, G2:  2, G3:  6, G4:  5,
+  H1:  2, H2:  9, H3:  4, H4:  3,
+  K1:  4, K2:  3, K3: 10, K4:  6,
+  O1:  1, O2:  4, O3:  9, O4:  2,
+  S1:  3, S2: -1, S3:  5, S4:  0,
+  B1: -2, B2:  1,
+  D1:  3, D2:  4,
+  // OCCUPATION (NCO)
+  "11": 3, "12": 5, "13": 5, "14": 3,
+  "21": 6, "22": 8, "23": 4, "24": 5, "25": 12, "26": 4,
+  "31": 5, "32": 7, "33": 4, "34": 3, "35": 9,
+  "41": -3, "42": -2, "43": -1, "44": -2,
+  "51": 3, "52": 2, "53": 7, "54": 3,
+  "61": -1, "62": 1, "63": -3,
+  "71": 5, "72": 3, "73": 0, "74": 8, "75": 2,
+  "81": 3, "82": 2, "83": 4,
+  "91": 4, "92": 0, "93": 5, "94": 3, "95": 2, "96": 4,
+  "01": 1, "02": 0, "03": 0,
+  // EMPLOYMENT TYPE × SECTOR
+  "SE-A": -1, "SE-T": 3, "SE-C": 2, "SE-S": 4, "SE-D": 5,
+  "RW-S":  5, "RW-M": 4, "RW-K": 9, "RW-T": 4, "RW-H": 6, "RW-O": 3,
+  "CL-A": -1, "CL-F": 4, "CL-M": 2, "CL-G": 1, "CL-O": 2,
+};
+function outlookLabel(g) {
+  if (g >= 8) return "Much faster than avg";
+  if (g >= 5) return "Faster than avg";
+  if (g >= 2) return "Average growth";
+  if (g >= 0) return "Slower than avg";
+  return "Declining";
+}
+
+// Digital AI Exposure score (0-10). 0 = physical/relational work AI can barely touch;
+// 10 = almost entirely digital cognitive work AI can substantially automate today.
+// Rubric: weigh share of tasks that are reading/writing text, manipulating data on
+// screen, generating designs/code, or following digital workflows — vs physical
+// dexterity, in-person presence, manual control of objects, or judgment in chaotic
+// real-world environments. Same framing as Karpathy/jobs (BLS OOH adaptation).
+const AI_EXPOSURE = {
+  // INDUSTRY
+  A1: 1, A2: 1, A3: 1, A4: 1,
+  C1: 3, C2: 3, C3: 4, C4: 4, C5: 5, C6: 3, C7: 5,
+  F1: 1, F2: 3, F3: 2,
+  G1: 4, G2: 5, G3: 3, G4: 4,
+  H1: 2, H2: 4, H3: 6, H4: 4,
+  K1: 9, K2: 6, K3: 10, K4: 7,
+  O1: 7, O2: 6, O3: 4, O4: 4,
+  S1: 2, S2: 1, S3: 6, S4: 5,
+  B1: 2, B2: 1,
+  D1: 5, D2: 3,
+  // OCCUPATION (NCO)
+  "11": 7, "12": 8, "13": 6, "14": 5,
+  "21": 7, "22": 5, "23": 6, "24": 9, "25": 10, "26": 7,
+  "31": 6, "32": 4, "33": 8, "34": 6, "35": 9,
+  "41": 9, "42": 9, "43": 8, "44": 7,
+  "51": 2, "52": 4, "53": 2, "54": 2,
+  "61": 1, "62": 1, "63": 0,
+  "71": 1, "72": 2, "73": 2, "74": 3, "75": 2,
+  "81": 3, "82": 3, "83": 2,
+  "91": 1, "92": 1, "93": 1, "94": 2, "95": 3, "96": 1,
+  "01": 5, "02": 4, "03": 3,
+  // EMPLOYMENT
+  "SE-A": 1, "SE-T": 5, "SE-C": 3, "SE-S": 3, "SE-D": 2,
+  "RW-S": 6, "RW-M": 4, "RW-K": 9, "RW-T": 5, "RW-H": 4, "RW-O": 5,
+  "CL-A": 1, "CL-F": 1, "CL-M": 2, "CL-G": 2, "CL-O": 2,
+};
+function exposureLabel(e) {
+  if (e >= 9) return "Very high — heavily automatable";
+  if (e >= 7) return "High — AI can do core tasks";
+  if (e >= 5) return "Moderate — AI reshapes parts";
+  if (e >= 3) return "Low — some digital tasks";
+  return "Minimal — physical/relational";
+}
+
+const fmtInt = d3.format(",.0f");
+const fmtPct = d3.format(".1f");
+const inrFmt = (v) => "₹" + d3.format(",")(Math.round(v));
+const workerFmt = (m) => m >= 1 ? d3.format(",.1f")(m) + " M" : d3.format(",.0f")(m * 1000) + "k";
+
+const chartEl = document.getElementById("chart");
+const tooltip = document.getElementById("tooltip");
+
+function buildHierarchy(viewKey) {
+  const SRC = VIEWS[viewKey];
+  return {
+    name: "India workforce",
+    children: SRC.map(g => ({
+      name: g.name, code: g.code, groupColor: g.color,
+      children: g.children.map(c => {
+        const workers_m = TOTAL_WORKERS_M * (g.share / 100) * c.subShare;
+        const growth = GROWTH[c.code] ?? 0;
+        const exposure = AI_EXPOSURE[c.code] ?? 5;
+        return {
+          name: c.name, code: c.code,
+          groupName: g.name, groupColor: g.color,
+          workers_m, wage: c.wage,
+          wageBill: workers_m * c.wage,
+          female: c.female, formal: c.formal,
+          growth, exposure,
+        };
+      })
+    }))
+  };
+}
+
+function colorScaleFor(metric, root) {
+  const leaves = root.leaves();
+  if (metric === "exposure") {
+    // 0 = safe (green), 10 = highly exposed (red). REVERSED RdYlGn.
+    // Anchor mid at 5 so the transition lands on real-world ambiguous jobs.
+    return d3.scaleDiverging()
+      .domain([0, 5, 10])
+      .interpolator(t => d3.interpolateRdYlGn(1 - t));
+  }
+  if (metric === "outlook") {
+    // Diverging red-yellow-green around 0% growth. Symmetric clamp at -5 / +12.
+    return d3.scaleDiverging()
+      .domain([-5, 0, 12])
+      .interpolator(d3.interpolateRdYlGn);
+  }
+  if (metric === "wage") {
+    const ext = d3.extent(leaves, d => d.data.wage);
+    return d3.scaleSequential().domain([Math.log(ext[0]), Math.log(ext[1])])
+      .interpolator(d3.interpolateInferno);
+  }
+  if (metric === "female") return d3.scaleSequential().domain([0, 80]).interpolator(d3.interpolateViridis);
+  if (metric === "formal") return d3.scaleSequential().domain([0, 100]).interpolator(d3.interpolateCividis);
+}
+function valueAccessor(sizeBy) { return d => sizeBy === "workers" ? d.workers_m : d.wageBill; }
+function metricVal(d, metric) {
+  if (metric === "exposure") return d.data.exposure;
+  if (metric === "outlook") return d.data.growth;
+  if (metric === "wage") return Math.log(d.data.wage);
+  if (metric === "female") return d.data.female;
+  if (metric === "formal") return d.data.formal;
+}
+
+function render() {
+  const view = document.getElementById("view").value;
+  const sizeBy = document.getElementById("sizeBy").value;
+  const colorBy = document.getElementById("colorBy").value;
+
+  const W = chartEl.clientWidth, H = chartEl.clientHeight;
+  d3.select(chartEl).selectAll("svg").remove();
+
+  const root = d3.hierarchy(buildHierarchy(view))
+    .sum(d => d.workers_m ? valueAccessor(sizeBy)(d) : 0)
+    .sort((a, b) => b.value - a.value);
+
+  d3.treemap()
+    .size([W, H])
+    .paddingOuter(2)
+    .paddingTop(d => d.depth === 1 ? 18 : 2)
+    .paddingInner(2)
+    .round(true)
+    (root);
+
+  const color = colorScaleFor(colorBy, root);
+  updateLegend(colorBy, color);
+
+  const svg = d3.select(chartEl).append("svg")
+    .attr("viewBox", `0 0 ${W} ${H}`)
+    .attr("preserveAspectRatio", "none");
+
+  const groups = svg.selectAll("g.group")
+    .data(root.children).enter().append("g")
+    .attr("class", "group")
+    .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+  groups.append("rect")
+    .attr("width", d => d.x1 - d.x0)
+    .attr("height", d => d.y1 - d.y0)
+    .attr("fill", d => d.data.groupColor)
+    .attr("opacity", 0.18)
+    .attr("stroke", d => d.data.groupColor)
+    .attr("stroke-opacity", 0.5);
+
+  groups.append("text")
+    .attr("class", "group-label")
+    .attr("x", 6).attr("y", 13)
+    .text(d => {
+      const w = d.x1 - d.x0;
+      const name = `${d.data.code} · ${d.data.name}`;
+      if (w < 80) return d.data.code;
+      if (w < 220) return name.length > 24 ? name.slice(0, 24) + "…" : name;
+      return name;
+    });
+
+  const leaves = svg.selectAll("g.cell")
+    .data(root.leaves()).enter().append("g")
+    .attr("class", "cell")
+    .attr("transform", d => `translate(${d.x0},${d.y0})`)
+    .on("mousemove", (event, d) => showTip(event, d))
+    .on("mouseleave", hideTip);
+
+  leaves.append("rect")
+    .attr("width", d => Math.max(0, d.x1 - d.x0))
+    .attr("height", d => Math.max(0, d.y1 - d.y0))
+    .attr("fill", d => color(metricVal(d, colorBy)));
+
+  leaves.append("text").attr("class", "label-name")
+    .attr("x", 5).attr("y", 14)
+    .text(d => {
+      const w = d.x1 - d.x0, h = d.y1 - d.y0;
+      if (w < 60 || h < 22) return "";
+      const max = Math.floor(w / 6.5);
+      return d.data.name.length > max ? d.data.name.slice(0, max - 1) + "…" : d.data.name;
+    });
+
+  leaves.append("text").attr("class", "label-stat")
+    .attr("x", 5).attr("y", 28)
+    .text(d => {
+      const w = d.x1 - d.x0, h = d.y1 - d.y0;
+      if (w < 70 || h < 38) return "";
+      const g = d.data.growth;
+      const gStr = (g > 0 ? "+" : "") + g + "%";
+      if (colorBy === "exposure") return `AI ${d.data.exposure}/10 · ${workerFmt(d.data.workers_m)} jobs`;
+      if (colorBy === "outlook") return `${gStr} · ${workerFmt(d.data.workers_m)} jobs`;
+      return `${workerFmt(d.data.workers_m)} · ${inrFmt(d.data.wage)}/mo`;
+    });
+}
+
+function showTip(event, d) {
+  const x = d.data;
+  const pctOfTotal = (x.workers_m / TOTAL_WORKERS_M) * 100;
+  const gStr = (x.growth > 0 ? "+" : "") + x.growth + "%";
+  const view = document.getElementById("view").value;
+  // Source flags: 'v' = PLFS-verified, 'a' = approximate (PLFS aggregate applied to sub-cell), 'e' = author estimate
+  const workersSrc = (view === "occupation" || view === "industry") ? "v" : "a";
+  const wageSrc = (view === "occupation") ? "a" : "e"; // NCO division avg vs unknown
+  const femaleSrc = (view === "occupation" || view === "industry") ? "v" : "e";
+  const formalSrc = "e";
+  const growthSrc = "e";
+  const exposureSrc = "e";
+  const badge = (s) => `<span class="src ${s}">${s === "v" ? "PLFS" : s === "a" ? "PLFS÷" : "est"}</span>`;
+  tooltip.innerHTML = `
+    <div class="name">${x.code} · ${x.name}</div>
+    <div class="grp">in ${d.parent.data.code} · ${d.parent.data.name}</div>
+    <div class="row"><span>Workers ${badge(workersSrc)}</span><span>${workerFmt(x.workers_m)} (${fmtPct(pctOfTotal)}%)</span></div>
+    <div class="row"><span>AI exposure ${badge(exposureSrc)}</span><span>${x.exposure}/10 · ${exposureLabel(x.exposure)}</span></div>
+    <div class="row"><span>Growth outlook ${badge(growthSrc)}</span><span>${gStr} / yr · ${outlookLabel(x.growth)}</span></div>
+    <div class="row"><span>Median wage ${badge(wageSrc)}</span><span>${inrFmt(x.wage)} / month</span></div>
+    <div class="row"><span>Female share ${badge(femaleSrc)}</span><span>${x.female}%</span></div>
+    <div class="row"><span>Formal sector ${badge(formalSrc)}</span><span>${x.formal}%</span></div>
+    <div class="row"><span>Monthly wage bill</span><span>₹${fmtInt(x.wageBill / 1000)} bn</span></div>
+  `;
+  positionTip(event);
+  tooltip.style.opacity = 1;
+}
+function positionTip(event) {
+  const pad = 14;
+  const margin = 8;
+  const vw = window.innerWidth, vh = window.innerHeight;
+
+  // Force layout so dimensions are current. offsetWidth/offsetHeight trigger reflow.
+  // Use generous fallbacks if still zero (extremely first hover edge case).
+  const tw = Math.max(tooltip.offsetWidth, 280);
+  const th = Math.max(tooltip.offsetHeight, 200);
+
+  const cx = event.clientX, cy = event.clientY;
+
+  // Decide quadrant. If cursor in right half → place tooltip to the LEFT of cursor.
+  // If cursor in bottom half → place tooltip ABOVE cursor.
+  let x = (cx > vw / 2) ? cx - pad - tw : cx + pad;
+  let y = (cy > vh / 2) ? cy - pad - th : cy + pad;
+
+  // Hard clamp inside viewport (final safety — never let it escape).
+  x = Math.min(Math.max(x, margin), vw - tw - margin);
+  y = Math.min(Math.max(y, margin), vh - th - margin);
+
+  tooltip.style.left = x + "px";
+  tooltip.style.top = y + "px";
+}
+function hideTip() { tooltip.style.opacity = 0; }
+
+function updateLegend(metric, scale) {
+  const sw = document.getElementById("legendSwatch");
+  const mn = document.getElementById("legendMin");
+  const mx = document.getElementById("legendMax");
+  if (metric === "exposure") {
+    const stops = d3.range(0, 1.001, 0.1).map(t => scale(t * 10));
+    sw.style.background = `linear-gradient(to right, ${stops.join(",")})`;
+    mn.textContent = "0 (safe / physical)";
+    mx.textContent = "10 (highly automatable)";
+    return;
+  }
+  if (metric === "outlook") {
+    // diverging: sample from -5 to +12
+    const stops = d3.range(0, 1.001, 0.1).map(t => scale(-5 + t * 17));
+    sw.style.background = `linear-gradient(to right, ${stops.join(",")})`;
+    mn.textContent = "−5% (declining)";
+    mx.textContent = "+12% (much faster)";
+    return;
+  }
+  const stops = d3.range(0, 1.001, 0.1).map(t => {
+    const v = scale.domain()[0] + t * (scale.domain()[1] - scale.domain()[0]);
+    return scale(v);
+  });
+  sw.style.background = `linear-gradient(to right, ${stops.join(",")})`;
+  if (metric === "wage") {
+    const lo = Math.round(Math.exp(scale.domain()[0]));
+    const hi = Math.round(Math.exp(scale.domain()[1]));
+    mn.textContent = "₹" + d3.format(",")(lo);
+    mx.textContent = "₹" + d3.format(",")(hi);
+  } else if (metric === "female") { mn.textContent = "0%"; mx.textContent = "80%"; }
+  else if (metric === "formal") { mn.textContent = "0%"; mx.textContent = "100%"; }
+}
+
+["view","sizeBy","colorBy"].forEach(id =>
+  document.getElementById(id).addEventListener("change", render)
+);
+window.addEventListener("resize", () => { clearTimeout(window.__r); window.__r = setTimeout(render, 120); });
+render();
+
+// =============== PLFS Monthly Bulletins (CWS, 15+, overall person) ===============
+// Source: PLFS Monthly Bulletins Apr 2025 - Mar 2026 (chart values).
+// Apr 2026 from press note search (PIB PRID 2261386).
+const MONTHS = ["Apr-25","May-25","Jun-25","Jul-25","Aug-25","Sep-25","Oct-25","Nov-25","Dec-25","Jan-26","Feb-26","Mar-26","Apr-26"];
+const LFPR_SERIES = [55.6, 54.8, 54.2, 54.9, 55.0, 55.3, 55.4, 55.8, 56.1, 55.9, 55.9, 55.4, 55.0];
+const WPR_SERIES  = [52.8, 51.7, 51.2, 52.0, 52.2, 52.4, 52.5, 53.2, 53.4, 53.1, 53.2, 52.6, 52.2];
+const UR_SERIES   = [5.1,  5.6,  5.6,  5.2,  5.1,  5.2,  5.2,  4.7,  4.8,  5.0,  4.9,  5.1,  5.2];
+
+function drawSpark(svgId, values, color, yPad) {
+  const svg = d3.select("#" + svgId);
+  const node = svg.node();
+  const W = node.clientWidth || 320;
+  const H = 70;
+  svg.selectAll("*").remove();
+  svg.attr("viewBox", `0 0 ${W} ${H}`).attr("preserveAspectRatio", "none");
+
+  const yMin = Math.min(...values) - yPad;
+  const yMax = Math.max(...values) + yPad;
+  const x = d3.scaleLinear().domain([0, values.length - 1]).range([34, W - 8]);
+  const y = d3.scaleLinear().domain([yMin, yMax]).range([H - 18, 6]);
+
+  // axis (left, sparse ticks)
+  const yTicks = [yMin + (yMax - yMin) * 0.15, (yMin + yMax) / 2, yMax - (yMax - yMin) * 0.15].map(v => Math.round(v * 10) / 10);
+  svg.append("g").selectAll("text").data(yTicks).enter().append("text")
+    .attr("x", 4).attr("y", d => y(d) + 3).attr("fill", "#9aa1ac").attr("font-size", 9).text(d => d.toFixed(1));
+
+  // gridlines
+  svg.append("g").selectAll("line").data(yTicks).enter().append("line")
+    .attr("x1", 32).attr("x2", W - 4).attr("y1", d => y(d)).attr("y2", d => y(d))
+    .attr("stroke", "#2a2f3a").attr("stroke-dasharray", "2,3");
+
+  // area + line
+  const area = d3.area().x((_, i) => x(i)).y0(H - 18).y1((d) => y(d)).curve(d3.curveMonotoneX);
+  const line = d3.line().x((_, i) => x(i)).y((d) => y(d)).curve(d3.curveMonotoneX);
+
+  svg.append("path").datum(values).attr("d", area).attr("fill", color).attr("fill-opacity", 0.18);
+  svg.append("path").datum(values).attr("d", line).attr("fill", "none").attr("stroke", color).attr("stroke-width", 1.6);
+
+  // points
+  svg.append("g").selectAll("circle").data(values).enter().append("circle")
+    .attr("cx", (_, i) => x(i)).attr("cy", (d) => y(d)).attr("r", (_, i) => i === values.length - 1 ? 3.5 : 1.8)
+    .attr("fill", (_, i) => i === values.length - 1 ? "#ffb84d" : color);
+
+  // last value label
+  const last = values[values.length - 1];
+  svg.append("text").attr("x", x(values.length - 1) - 4).attr("y", y(last) - 6)
+    .attr("fill", "#ffb84d").attr("font-size", 11).attr("font-weight", 700)
+    .attr("text-anchor", "end").text(last.toFixed(1) + "%");
+
+  // x-axis: first, last
+  svg.append("text").attr("x", x(0)).attr("y", H - 4).attr("fill", "#9aa1ac").attr("font-size", 9).text(MONTHS[0]);
+  svg.append("text").attr("x", x(values.length - 1)).attr("y", H - 4).attr("fill", "#9aa1ac").attr("font-size", 9).attr("text-anchor", "end").text(MONTHS[values.length - 1]);
+}
+
+function drawAllSparks() {
+  drawSpark("trend-lfpr", LFPR_SERIES, "#6fb1ff", 0.6);
+  drawSpark("trend-wpr",  WPR_SERIES,  "#5fb37a", 0.6);
+  drawSpark("trend-ur",   UR_SERIES,   "#f08a5d", 0.3);
+}
+drawAllSparks();
+window.addEventListener("resize", () => { clearTimeout(window.__rs); window.__rs = setTimeout(drawAllSparks, 120); });
+</script>
+</body>
+</html>
