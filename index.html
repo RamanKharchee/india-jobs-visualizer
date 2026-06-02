@@ -203,72 +203,121 @@
 const TOTAL_WORKERS_M = 616;
 
 // =============== VIEW 1: INDUSTRY (NIC) ===============
-// VERIFIED from PLFS 2023-24 Annual Report:
-//   - Broad division share: Statement 7 (rural+urban, persons, usual status).
-//   - Female share per industry: derived from Statement 7 male/female columns
-//     using F-share-of-workforce = 0.346 (PLFS 2023-24 weighted).
-// APPROXIMATE: sub-sector splits within each broad division (PLFS publishes
-// these only via Table 26 at 2-digit NIC level — not all 50+ subdivisions
-// extracted here; allocation reflects rough sectoral pattern, not exact PLFS).
-// APPROXIMATE: per-sub-sector wages (PLFS publishes wage by NCO Division only).
+// PLFS-VERIFIED from Annual Report 2023-24:
+//   - Section + 2-digit Division shares: Table 26 (rural+urban, persons, usual status)
+//   - Female share per cell: computed from Table 26 male/female columns
+//     using F-share-of-cell = (F_pct × 200M) / (P_pct × 616M).
+// APPROXIMATE: per-cell median wage (PLFS publishes wage by NCO Division only,
+//   not by NIC Section). Per-section typical regular-wage estimate applied uniformly
+//   to sub-divisions. Industry-wage cross-tab not in published PLFS statements.
+// APPROXIMATE: formal-sector share (PLFS Statement 9 only at non-agri aggregate level).
 const INDUSTRY = [
-  { code: "A", name: "Agriculture, forestry & fishing", share: 46.1, color: "#5fb37a", children: [
-    { code: "A1", name: "Crop & animal production (farmers, labourers)", subShare: 0.86, wage: 7500, female: 48, formal: 3 },
-    { code: "A2", name: "Forestry & logging", subShare: 0.04, wage: 9000, female: 22, formal: 12 },
-    { code: "A3", name: "Fishing & aquaculture", subShare: 0.06, wage: 11000, female: 12, formal: 8 },
-    { code: "A4", name: "Plantation crops (tea, coffee, rubber)", subShare: 0.04, wage: 9500, female: 55, formal: 25 },
+  { code: "A", name: "Agriculture, forestry & fishing", share: 46.07, color: "#5fb37a", children: [
+    { code: "01", name: "Crop & animal production", subShare: 0.982, wage: 9000, female: 45.3, formal: 3 },
+    { code: "02", name: "Forestry & logging", subShare: 0.0111, wage: 9000, female: 71.9, formal: 12 },
+    { code: "03", name: "Fishing & aquaculture", subShare: 0.0069, wage: 9000, female: 7.1, formal: 8 },
   ]},
-  { code: "C", name: "Manufacturing", share: 11.4, color: "#c084d6", children: [
-    { code: "C1", name: "Textiles, apparel, leather", subShare: 0.30, wage: 11000, female: 48, formal: 28 },
-    { code: "C2", name: "Food, beverages, tobacco", subShare: 0.18, wage: 10000, female: 28, formal: 18 },
-    { code: "C3", name: "Metals, machinery, equipment", subShare: 0.18, wage: 16000, female: 6, formal: 45 },
-    { code: "C4", name: "Auto, transport equipment", subShare: 0.10, wage: 19000, female: 10, formal: 60 },
-    { code: "C5", name: "Chemicals, pharma, rubber, plastics", subShare: 0.10, wage: 17000, female: 22, formal: 55 },
-    { code: "C6", name: "Wood, paper, furniture, printing", subShare: 0.08, wage: 11000, female: 18, formal: 15 },
-    { code: "C7", name: "Electronics & electrical equipment", subShare: 0.06, wage: 18000, female: 20, formal: 65 },
+  { code: "B", name: "Mining & quarrying", share: 0.23, color: "#a98b6a", children: [
+    { code: "05", name: "Coal & lignite mining", subShare: 0.3043, wage: 18000, female: 9.3, formal: 72 },
+    { code: "07", name: "Metal ore mining", subShare: 0.087, wage: 18000, female: 16.2, formal: 60 },
+    { code: "08", name: "Other mining & quarrying", subShare: 0.5217, wage: 18000, female: 8.1, formal: 18 },
   ]},
-  { code: "F", name: "Construction", share: 12.0, color: "#e7c14c", children: [
-    { code: "F1", name: "Building construction (residential, commercial)", subShare: 0.62, wage: 12000, female: 11, formal: 10 },
-    { code: "F2", name: "Civil engineering (roads, rail, bridges)", subShare: 0.22, wage: 14500, female: 4, formal: 22 },
-    { code: "F3", name: "Specialized construction (electrical, plumbing, finishing)", subShare: 0.16, wage: 14000, female: 6, formal: 18 },
+  { code: "C", name: "Manufacturing", share: 11.44, color: "#c084d6", children: [
+    { code: "10", name: "Food products", subShare: 0.0909, wage: 14000, female: 21.5, formal: 22 },
+    { code: "11", name: "Beverages", subShare: 0.0061, wage: 14000, female: 23.2, formal: 40 },
+    { code: "12", name: "Tobacco products", subShare: 0.0673, wage: 14000, female: 86.4, formal: 12 },
+    { code: "13", name: "Textiles", subShare: 0.1084, wage: 14000, female: 44.5, formal: 28 },
+    { code: "14", name: "Wearing apparel", subShare: 0.2185, wage: 14000, female: 60.3, formal: 30 },
+    { code: "15", name: "Leather & related", subShare: 0.0184, wage: 14000, female: 24.7, formal: 28 },
+    { code: "16", name: "Wood & wood products", subShare: 0.0367, wage: 14000, female: 20.1, formal: 12 },
+    { code: "17", name: "Paper & paper products", subShare: 0.0149, wage: 14000, female: 22.9, formal: 35 },
+    { code: "18", name: "Printing", subShare: 0.0105, wage: 14000, female: 10.8, formal: 20 },
+    { code: "19", name: "Coke & refined petroleum", subShare: 0.0035, wage: 14000, female: 8.1, formal: 80 },
+    { code: "20", name: "Chemicals", subShare: 0.0245, wage: 14000, female: 24.4, formal: 60 },
+    { code: "21", name: "Pharmaceuticals", subShare: 0.0219, wage: 14000, female: 16.9, formal: 70 },
+    { code: "22", name: "Rubber & plastics", subShare: 0.0184, wage: 14000, female: 17.0, formal: 45 },
+    { code: "23", name: "Non-metallic minerals", subShare: 0.0638, wage: 14000, female: 20.9, formal: 18 },
+    { code: "24", name: "Basic metals", subShare: 0.0315, wage: 14000, female: 3.6, formal: 55 },
+    { code: "25", name: "Fabricated metal", subShare: 0.0533, wage: 14000, female: 6.4, formal: 30 },
+    { code: "26", name: "Computers, electronics, optical", subShare: 0.0105, wage: 14000, female: 13.5, formal: 65 },
+    { code: "27", name: "Electrical equipment", subShare: 0.021, wage: 14000, female: 10.8, formal: 55 },
+    { code: "28", name: "Machinery & equipment", subShare: 0.021, wage: 14000, female: 6.8, formal: 50 },
+    { code: "29", name: "Motor vehicles", subShare: 0.0227, wage: 14000, female: 7.5, formal: 60 },
+    { code: "30", name: "Other transport equipment", subShare: 0.0096, wage: 14000, female: 8.9, formal: 55 },
+    { code: "31", name: "Furniture", subShare: 0.0472, wage: 14000, female: 0.6, formal: 15 },
+    { code: "32", name: "Other manufacturing", subShare: 0.0533, wage: 14000, female: 25.0, formal: 18 },
+    { code: "33", name: "Repair & installation of machinery", subShare: 0.0271, wage: 14000, female: 1.0, formal: 25 },
   ]},
-  { code: "G", name: "Wholesale & retail trade, hotels, restaurants", share: 12.2, color: "#f08a5d", children: [
-    { code: "G1", name: "Retail trade (shopkeepers, salespersons)", subShare: 0.58, wage: 12000, female: 17, formal: 14 },
-    { code: "G2", name: "Wholesale trade & commission agents", subShare: 0.16, wage: 16000, female: 12, formal: 32 },
-    { code: "G3", name: "Restaurants, food service & catering", subShare: 0.18, wage: 11000, female: 22, formal: 18 },
-    { code: "G4", name: "Accommodation, hotels & lodging", subShare: 0.08, wage: 13000, female: 24, formal: 38 },
+  { code: "D", name: "Electricity, gas & water utilities", share: 0.54, color: "#7a7d85", children: [
+    { code: "35", name: "Electricity & gas supply", subShare: 0.5, wage: 22000, female: 4.8, formal: 90 },
+    { code: "36", name: "Water supply", subShare: 0.1667, wage: 22000, female: 3.6, formal: 65 },
+    { code: "37", name: "Sewerage", subShare: 0.037, wage: 22000, female: 0.0, formal: 50 },
+    { code: "38", name: "Waste management", subShare: 0.2963, wage: 22000, female: 28.4, formal: 30 },
   ]},
-  { code: "H", name: "Transport, storage & communication", share: 5.6, color: "#6f8cd3", children: [
-    { code: "H1", name: "Road transport (drivers, freight)", subShare: 0.62, wage: 14000, female: 7, formal: 16 },
-    { code: "H2", name: "Storage, warehousing & support", subShare: 0.16, wage: 15000, female: 6, formal: 35 },
-    { code: "H3", name: "Telecom & postal services", subShare: 0.12, wage: 22000, female: 18, formal: 65 },
-    { code: "H4", name: "Rail, water & air transport", subShare: 0.10, wage: 25000, female: 8, formal: 85 },
+  { code: "F", name: "Construction", share: 11.98, color: "#e7c14c", children: [
+    { code: "41", name: "Construction of buildings", subShare: 0.8055, wage: 13000, female: 6.7, formal: 10 },
+    { code: "42", name: "Civil engineering", subShare: 0.0793, wage: 13000, female: 57.8, formal: 25 },
+    { code: "43", name: "Specialized construction", subShare: 0.1144, wage: 13000, female: 0.9, formal: 18 },
   ]},
-  { code: "K", name: "Other services (finance, IT/ITeS, real estate, business)", share: 4.5, color: "#7bc6c8", children: [
-    { code: "K1", name: "Banking, insurance, financial intermediation", subShare: 0.42, wage: 32000, female: 38, formal: 88 },
-    { code: "K2", name: "Real estate, leasing", subShare: 0.18, wage: 18000, female: 38, formal: 35 },
-    { code: "K3", name: "IT/ITeS & professional, scientific services", subShare: 0.30, wage: 38000, female: 38, formal: 82 },
-    { code: "K4", name: "Administrative & support services", subShare: 0.10, wage: 14000, female: 38, formal: 32 },
+  { code: "G", name: "Wholesale & retail trade", share: 10.23, color: "#f08a5d", children: [
+    { code: "45", name: "Motor vehicles trade & repair", subShare: 0.087, wage: 13000, female: 2.9, formal: 22 },
+    { code: "46", name: "Wholesale trade", subShare: 0.1505, wage: 13000, female: 6.7, formal: 32 },
+    { code: "47", name: "Retail trade", subShare: 0.7625, wage: 13000, female: 18.4, formal: 14 },
   ]},
-  { code: "O", name: "Public administration, defence, education, health", share: 6.0, color: "#5b8def", children: [
-    { code: "O1", name: "Public administration & defence", subShare: 0.32, wage: 32000, female: 38, formal: 95 },
-    { code: "O2", name: "Education (teachers, schools, colleges)", subShare: 0.40, wage: 22000, female: 38, formal: 68 },
-    { code: "O3", name: "Human health & social work", subShare: 0.20, wage: 20000, female: 38, formal: 55 },
-    { code: "O4", name: "Other community/social services (police, fire)", subShare: 0.08, wage: 18000, female: 38, formal: 78 },
+  { code: "I", name: "Accommodation & food service", share: 2.0, color: "#ff8a65", children: [
+    { code: "55", name: "Accommodation (hotels)", subShare: 0.08, wage: 11500, female: 18.3, formal: 38 },
+    { code: "56", name: "Food & beverage service", subShare: 0.92, wage: 11500, female: 19.9, formal: 18 },
   ]},
-  { code: "S", name: "Other personal & household services", share: 1.4, color: "#b6d27a", children: [
-    { code: "S1", name: "Personal services (salons, laundry, repair)", subShare: 0.42, wage: 10500, female: 38, formal: 8 },
-    { code: "S2", name: "Domestic & household work", subShare: 0.32, wage: 8500, female: 78, formal: 4 },
-    { code: "S3", name: "Arts, entertainment, recreation", subShare: 0.10, wage: 13000, female: 28, formal: 18 },
-    { code: "S4", name: "Membership organizations, religious", subShare: 0.16, wage: 11000, female: 22, formal: 28 },
+  { code: "H", name: "Transport, storage, postal", share: 4.28, color: "#6f8cd3", children: [
+    { code: "49", name: "Land transport", subShare: 0.8832, wage: 16000, female: 0.4, formal: 18 },
+    { code: "52", name: "Storage & warehousing", subShare: 0.0771, wage: 16000, female: 6.9, formal: 35 },
+    { code: "53", name: "Postal & courier", subShare: 0.0304, wage: 16000, female: 7.5, formal: 65 },
   ]},
-  { code: "B", name: "Mining & quarrying", share: 0.2, color: "#a98b6a", children: [
-    { code: "B1", name: "Coal, lignite, ore mining", subShare: 0.60, wage: 22000, female: 17, formal: 72 },
-    { code: "B2", name: "Stone, sand & quarrying", subShare: 0.40, wage: 12000, female: 17, formal: 18 },
+  { code: "J", name: "Information & communication, IT", share: 1.35, color: "#7bc6c8", children: [
+    { code: "61", name: "Telecommunications", subShare: 0.0741, wage: 30000, female: 9.7, formal: 70 },
+    { code: "62", name: "Computer programming, IT", subShare: 0.7333, wage: 30000, female: 23.6, formal: 88 },
+    { code: "63", name: "Information service activities", subShare: 0.1111, wage: 30000, female: 19.5, formal: 75 },
   ]},
-  { code: "D", name: "Electricity, gas, water, sanitation", share: 0.5, color: "#7a7d85", children: [
-    { code: "D1", name: "Electricity & gas supply", subShare: 0.55, wage: 28000, female: 14, formal: 90 },
-    { code: "D2", name: "Water, sewerage & waste mgmt", subShare: 0.45, wage: 14000, female: 14, formal: 45 },
+  { code: "K", name: "Financial & insurance services", share: 1.05, color: "#5b8def", children: [
+    { code: "64", name: "Banking & financial services", subShare: 0.8, wage: 30000, female: 20.1, formal: 88 },
+    { code: "65", name: "Insurance & pension", subShare: 0.0952, wage: 30000, female: 16.2, formal: 85 },
+    { code: "66", name: "Aux financial services", subShare: 0.1048, wage: 30000, female: 20.7, formal: 72 },
+  ]},
+  { code: "L", name: "Real estate", share: 0.22, color: "#9b7eba", children: [
+    { code: "68", name: "Real estate activities", subShare: 1.0, wage: 18000, female: 10.3, formal: 32 },
+  ]},
+  { code: "M", name: "Professional, scientific & technical", share: 0.67, color: "#5fb3c8", children: [
+    { code: "69", name: "Legal & accounting", subShare: 0.4478, wage: 25000, female: 18.4, formal: 45 },
+    { code: "71", name: "Architecture & engineering", subShare: 0.0896, wage: 25000, female: 16.2, formal: 60 },
+    { code: "74", name: "Other professional, scientific", subShare: 0.2985, wage: 25000, female: 13.0, formal: 40 },
+  ]},
+  { code: "N", name: "Administrative & support services", share: 0.92, color: "#92a8d6", children: [
+    { code: "77", name: "Rental & leasing", subShare: 0.2065, wage: 16000, female: 3.4, formal: 38 },
+    { code: "78", name: "Employment activities", subShare: 0.1087, wage: 16000, female: 13.0, formal: 32 },
+    { code: "80", name: "Security & investigation", subShare: 0.2065, wage: 16000, female: 1.7, formal: 62 },
+    { code: "82", name: "Office admin, support", subShare: 0.3043, wage: 16000, female: 19.7, formal: 35 },
+  ]},
+  { code: "O", name: "Public administration & defence", share: 1.42, color: "#3d6cb4", children: [
+    { code: "84", name: "Public administration & defence", subShare: 1.0, wage: 30000, female: 19.4, formal: 95 },
+  ]},
+  { code: "P", name: "Education", share: 3.04, color: "#b6d27a", children: [
+    { code: "85", name: "Education", subShare: 1.0, wage: 22000, female: 48.7, formal: 68 },
+  ]},
+  { code: "Q", name: "Health & social work", share: 1.35, color: "#e57373", children: [
+    { code: "86", name: "Hospitals & health services", subShare: 0.8593, wage: 22000, female: 46.5, formal: 55 },
+    { code: "88", name: "Social work without accommodation", subShare: 0.1185, wage: 22000, female: 81.2, formal: 40 },
+  ]},
+  { code: "R", name: "Arts, entertainment, recreation", share: 0.22, color: "#d4a574", children: [
+    { code: "90", name: "Creative, arts, entertainment", subShare: 0.6818, wage: 16000, female: 10.8, formal: 22 },
+    { code: "93", name: "Sports, amusement", subShare: 0.1818, wage: 16000, female: 8.1, formal: 18 },
+  ]},
+  { code: "S", name: "Other personal services", share: 1.67, color: "#a87cc4", children: [
+    { code: "94", name: "Membership organizations", subShare: 0.1796, wage: 11000, female: 11.9, formal: 28 },
+    { code: "95", name: "Repair of computers & personal goods", subShare: 0.2814, wage: 11000, female: 6.9, formal: 15 },
+    { code: "96", name: "Personal services (salons, laundry)", subShare: 0.5389, wage: 11000, female: 35.4, formal: 8 },
+  ]},
+  { code: "T", name: "Household domestic workers", share: 1.31, color: "#7cb8a8", children: [
+    { code: "97", name: "Domestic workers", subShare: 1.0, wage: 8500, female: 67.4, formal: 4 },
   ]},
 ];
 
@@ -379,17 +428,47 @@ const VIEWS = { industry: INDUSTRY, occupation: OCCUPATION, employment: EMPLOYME
 // (PLI scheme push for electronics, IT/ITeS hiring trend, agri share decline, etc.).
 // Negative = shrinking, 0 = flat, positive = growing.
 const GROWTH = {
-  // INDUSTRY (NIC)
-  A1: -1, A2:  0, A3:  4, A4: -1,
-  C1:  2, C2:  4, C3:  3, C4:  6, C5:  5, C6:  1, C7: 12,
-  F1:  5, F2:  7, F3:  4,
-  G1:  3, G2:  2, G3:  6, G4:  5,
-  H1:  2, H2:  9, H3:  4, H4:  3,
-  K1:  4, K2:  3, K3: 10, K4:  6,
-  O1:  1, O2:  4, O3:  9, O4:  2,
-  S1:  3, S2: -1, S3:  5, S4:  0,
-  B1: -2, B2:  1,
-  D1:  3, D2:  4,
+  // INDUSTRY (NIC 2-digit divisions)
+  // Agriculture
+  "01": -1, "02": 0, "03": 4,
+  // Mining
+  "05": -2, "07": 1, "08": 1,
+  // Manufacturing
+  "10": 4, "11": 5, "12": -3, "13": 2, "14": 3, "15": 1, "16": 1, "17": 2,
+  "18": -1, "19": 1, "20": 5, "21": 8, "22": 4, "23": 2, "24": 4, "25": 3,
+  "26": 12, "27": 7, "28": 4, "29": 6, "30": 4, "31": 2, "32": 3, "33": 3,
+  // Utilities
+  "35": 3, "36": 4, "37": 4, "38": 5,
+  // Construction
+  "41": 5, "42": 8, "43": 4,
+  // Trade
+  "45": 4, "46": 2, "47": 3,
+  // Accommodation/food
+  "55": 5, "56": 6,
+  // Transport
+  "49": 2, "52": 10, "53": 3,
+  // Info/Communication
+  "61": 4, "62": 12, "63": 9,
+  // Financial
+  "64": 4, "65": 5, "66": 5,
+  // Real estate
+  "68": 3,
+  // Professional
+  "69": 4, "71": 6, "74": 5,
+  // Admin/support
+  "77": 3, "78": 7, "80": 4, "82": 4,
+  // Public admin
+  "84": 1,
+  // Education
+  "85": 4,
+  // Health
+  "86": 8, "88": 9,
+  // Arts
+  "90": 5, "93": 6,
+  // Other services
+  "94": 0, "95": 3, "96": 3,
+  // Households
+  "97": -1,
   // OCCUPATION (NCO)
   "11": 3, "12": 5, "13": 5, "14": 3,
   "21": 6, "22": 8, "23": 4, "24": 5, "25": 12, "26": 4,
@@ -421,17 +500,47 @@ function outlookLabel(g) {
 // dexterity, in-person presence, manual control of objects, or judgment in chaotic
 // real-world environments. Same framing as Karpathy/jobs (BLS OOH adaptation).
 const AI_EXPOSURE = {
-  // INDUSTRY
-  A1: 1, A2: 1, A3: 1, A4: 1,
-  C1: 3, C2: 3, C3: 4, C4: 4, C5: 5, C6: 3, C7: 5,
-  F1: 1, F2: 3, F3: 2,
-  G1: 4, G2: 5, G3: 3, G4: 4,
-  H1: 2, H2: 4, H3: 6, H4: 4,
-  K1: 9, K2: 6, K3: 10, K4: 7,
-  O1: 7, O2: 6, O3: 4, O4: 4,
-  S1: 2, S2: 1, S3: 6, S4: 5,
-  B1: 2, B2: 1,
-  D1: 5, D2: 3,
+  // INDUSTRY (NIC 2-digit divisions)
+  // Agriculture — all physical
+  "01": 1, "02": 1, "03": 1,
+  // Mining — physical
+  "05": 2, "07": 2, "08": 1,
+  // Manufacturing
+  "10": 3, "11": 3, "12": 2, "13": 3, "14": 3, "15": 3, "16": 3, "17": 3,
+  "18": 5, "19": 5, "20": 5, "21": 5, "22": 4, "23": 3, "24": 4, "25": 4,
+  "26": 5, "27": 4, "28": 4, "29": 4, "30": 4, "31": 3, "32": 3, "33": 4,
+  // Utilities
+  "35": 5, "36": 3, "37": 2, "38": 2,
+  // Construction
+  "41": 1, "42": 3, "43": 2,
+  // Trade
+  "45": 4, "46": 5, "47": 4,
+  // Accommodation/food
+  "55": 4, "56": 3,
+  // Transport
+  "49": 2, "52": 5, "53": 5,
+  // Info/Communication — heavily digital
+  "61": 7, "62": 10, "63": 9,
+  // Financial — heavily digital
+  "64": 9, "65": 9, "66": 9,
+  // Real estate
+  "68": 6,
+  // Professional services
+  "69": 9, "71": 7, "74": 7,
+  // Admin/support
+  "77": 5, "78": 7, "80": 2, "82": 8,
+  // Public admin
+  "84": 7,
+  // Education
+  "85": 6,
+  // Health
+  "86": 4, "88": 3,
+  // Arts
+  "90": 6, "93": 3,
+  // Other services
+  "94": 5, "95": 4, "96": 2,
+  // Households
+  "97": 1,
   // OCCUPATION (NCO)
   "11": 7, "12": 8, "13": 6, "14": 5,
   "21": 7, "22": 5, "23": 6, "24": 9, "25": 10, "26": 7,
