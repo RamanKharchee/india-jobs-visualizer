@@ -15,16 +15,19 @@ Each tooltip row carries a source badge:
 | **est** | Author estimate (no PLFS source) |
 
 ### PLFS-verified
-- Industry broad-division shares + sex splits — Statement 7
-- NCO occupation 2-digit shares + sex splits — Table 25 (Appendix A)
-- Average regular wage/salaried earnings by NCO Division — Table 50
-- Headline indicators (LFPR / WPR / UR) — PLFS Monthly Bulletin April 2026
+- Industry NIC 2-digit Division shares + female share per cell — **Table 26** (Appendix A)
+- NCO occupation 2-digit shares + female share per cell — **Table 25** (Appendix A)
+- Average regular wage/salaried earnings by NCO Division — **Table 50**
+- Casual labour daily wage by NIC Section — **Table 51**
+- Average weekly hours by employment status — **Statement 13**
+- Headline indicators (LFPR / WPR / UR) — **PLFS Monthly Bulletin April 2026**
+- Youth UR (15–29) and Graduate UR (secondary+) — **Statements 15 & 16**
 
-### Estimates (clearly flagged)
-- Growth outlook (%/year) — from PLFS YoY share shifts + sector trend reading
+### Estimates (clearly flagged with `est` badge)
+- Industry-cell median wage (PLFS publishes wage by NCO Division only, not NIC × wage cross-tab)
+- Formal-sector share per cell (PLFS Statement 9 only at aggregate level)
+- Growth outlook (%/year) — derived from PLFS YoY share shifts (2022–25) + sector trend
 - Digital AI Exposure (0–10) — hand-scored per [karpathy/jobs](https://github.com/karpathy/jobs) rubric
-- Formal-sector share per cell
-- Sub-sector splits within industry divisions
 
 ## Sources
 
