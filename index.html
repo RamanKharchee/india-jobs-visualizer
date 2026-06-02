@@ -565,6 +565,15 @@ function exposureLabel(e) {
   return "Minimal — physical/relational";
 }
 
+// PLFS-VERIFIED: Avg casual labour daily wage by NIC section (Table 51, all-India, rural+urban person).
+// Use as PLFS-verified reference per industry section. NOTE: most workers in some sectors
+// are NOT casual (banking, IT, public admin = mostly regular salaried), so casual wage
+// represents a labour-market floor, not the typical sector wage.
+const CASUAL_DAY_WAGE_BY_SECTION = {
+  A: 333, B: 480, C: 443, D: 513, E: 360, F: 447, G: 453, H: 526, I: 479,
+  J: 750, K: 502, L: 400, M: 595, N: 438, O: 328, P: 241, Q: 378, R: 490, S: 393, T: 395,
+};
+
 const fmtInt = d3.format(",.0f");
 const fmtPct = d3.format(".1f");
 const inrFmt = (v) => "₹" + d3.format(",")(Math.round(v));
@@ -583,13 +592,15 @@ function buildHierarchy(viewKey) {
         const workers_m = TOTAL_WORKERS_M * (g.share / 100) * c.subShare;
         const growth = GROWTH[c.code] ?? 0;
         const exposure = AI_EXPOSURE[c.code] ?? 5;
+        // PLFS Table 51 casual daily wage (NIC section level) — only for Industry view
+        const casualDay = (viewKey === "industry") ? (CASUAL_DAY_WAGE_BY_SECTION[g.code] ?? null) : null;
         return {
           name: c.name, code: c.code,
-          groupName: g.name, groupColor: g.color,
+          groupName: g.name, groupColor: g.color, groupCode: g.code,
           workers_m, wage: c.wage,
           wageBill: workers_m * c.wage,
           female: c.female, formal: c.formal,
-          growth, exposure,
+          growth, exposure, casualDay,
         };
       })
     }))
@@ -733,6 +744,7 @@ function showTip(event, d) {
     <div class="row"><span>AI exposure ${badge(exposureSrc)}</span><span>${x.exposure}/10 · ${exposureLabel(x.exposure)}</span></div>
     <div class="row"><span>Growth outlook ${badge(growthSrc)}</span><span>${gStr} / yr · ${outlookLabel(x.growth)}</span></div>
     <div class="row"><span>Median wage ${badge(wageSrc)}</span><span>${inrFmt(x.wage)} / month</span></div>
+    ${x.casualDay ? `<div class="row"><span>Casual day wage ${badge("v")}</span><span>${inrFmt(x.casualDay)} / day · sec ${x.groupCode}</span></div>` : ""}
     <div class="row"><span>Female share ${badge(femaleSrc)}</span><span>${x.female}%</span></div>
     <div class="row"><span>Formal sector ${badge(formalSrc)}</span><span>${x.formal}%</span></div>
     <div class="row"><span>Monthly wage bill</span><span>₹${fmtInt(x.wageBill / 1000)} bn</span></div>
